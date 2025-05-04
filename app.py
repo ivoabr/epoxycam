@@ -8,6 +8,8 @@ import threading
 import time
 import os
 from datetime import datetime
+import cv2
+import numpy as np
 
 app = Flask(__name__)
 picam2 = Picamera2()
@@ -20,8 +22,7 @@ def read_temperature():
     try:
         base_path = '/sys/bus/w1/devices/'
         device_folder = [f for f in os.listdir(base_path) if f.startswith('28-')][0]
-        device_file = os.path.join(base_path, device_folder, 'w1_slave'
-        )
+        device_file = os.path.join(base_path, device_folder, 'w1_slave')
         with open(device_file, 'r') as f:
             lines = f.readlines()
             if lines[0].strip()[-3:] != 'YES':
@@ -94,6 +95,22 @@ def download_video():
         return send_file(video_file_path, as_attachment=True)
     else:
         return "No video recorded yet", 404
+
+@app.route('/preview')
+def preview():
+    def generate():
+        while True:
+            frame = picam2.capture_array()
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame_bytes = buffer.tobytes()
+            yield (b'--frame
+'
+                   b'Content-Type: image/jpeg
+
+' + frame_bytes + b'
+')
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
     os.makedirs("recordings", exist_ok=True)
