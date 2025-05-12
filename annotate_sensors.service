@@ -1,0 +1,16 @@
+[Unit]
+Description=Run annotate_sensors script at startup
+After=default.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/admin/annotate_sensors.py --verbose
+WorkingDirectory=/home/admin
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=admin
+Group=admin
+
+[Install]
+WantedBy=multi-user.target
+
